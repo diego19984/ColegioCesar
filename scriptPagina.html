@@ -7,6 +7,7 @@ let datosOriginales = [];
 let datosMostrados = [];
 let ordenActual = { col: null, asc: true };
 let debounceTimer;
+let guardandoRegistro = false; // Bandera para evitar múltiples guardados
 
 // Listas de opciones cargadas al inicio
 let listasOpciones = { categorias: [], grados: [], instituciones: [] };
@@ -259,6 +260,12 @@ function limpiarModal() {
 }
 
 function guardarRegistro() {
+  // Bloquear si ya se está guardando
+  if (guardandoRegistro) {
+    alert("Por favor espera a que termine el registro anterior");
+    return;
+  }
+
   const id = document.getElementById("mId").value;
   const apellidos = document.getElementById("mApellidos").value.trim();
   const nombres = document.getElementById("mNombres").value.trim();
@@ -278,16 +285,59 @@ function guardarRegistro() {
     return; 
   }
 
+  // Establecer bandera de guardando y deshabilitar botón
+  guardandoRegistro = true;
+  const btnGuardar = document.querySelector("#modalAgregar button[onclick*='guardarRegistro']");
+  if (btnGuardar) {
+    btnGuardar.disabled = true;
+    btnGuardar.style.opacity = "0.5";
+    btnGuardar.style.cursor = "not-allowed";
+  }
+
   const editId = document.getElementById("modalAgregar").getAttribute("data-edit-id");
   const registro = { id, apellidos, nombres, grado, ie, categoria, puntaje, hora };
 
   if(editId) {
     google.script.run
-      .withSuccessHandler(() => { cerrarModal(); cargarData(); })
+      .withSuccessHandler(() => { 
+        guardandoRegistro = false;
+        if (btnGuardar) {
+          btnGuardar.disabled = false;
+          btnGuardar.style.opacity = "1";
+          btnGuardar.style.cursor = "pointer";
+        }
+        cerrarModal(); 
+        cargarData(); 
+      })
+      .withFailureHandler(() => {
+        guardandoRegistro = false;
+        if (btnGuardar) {
+          btnGuardar.disabled = false;
+          btnGuardar.style.opacity = "1";
+          btnGuardar.style.cursor = "pointer";
+        }
+      })
       .editarRegistroSheet(registro);
   } else {
     google.script.run
-      .withSuccessHandler(() => { cerrarModal(); cargarData(); })
+      .withSuccessHandler(() => { 
+        guardandoRegistro = false;
+        if (btnGuardar) {
+          btnGuardar.disabled = false;
+          btnGuardar.style.opacity = "1";
+          btnGuardar.style.cursor = "pointer";
+        }
+        cerrarModal(); 
+        cargarData(); 
+      })
+      .withFailureHandler(() => {
+        guardandoRegistro = false;
+        if (btnGuardar) {
+          btnGuardar.disabled = false;
+          btnGuardar.style.opacity = "1";
+          btnGuardar.style.cursor = "pointer";
+        }
+      })
       .agregarRegistro(registro);
   }
 }
