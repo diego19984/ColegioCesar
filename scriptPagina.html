@@ -1,0 +1,420 @@
+<script>
+/* -----------------------------------
+   Script completo optimizado
+   ----------------------------------- */
+
+let datosOriginales = [];
+let datosMostrados = [];
+let ordenActual = { col: null, asc: true };
+let debounceTimer;
+
+// Listas de opciones cargadas al inicio
+let listasOpciones = { categorias: [], grados: [], instituciones: [] };
+
+function cargarPagina(nombre) {
+  google.script.run
+    .withSuccessHandler(html => {
+      document.getElementById("contenido-principal").innerHTML = html;
+      if (nombre === "pageFormulario") {
+        // Cargar datos y listas de opciones al inicio
+        cargarOpcionesInicial();
+        setTimeout(cargarData, 50);
+      }
+    })
+    .getPagina(nombre);
+}
+
+function cargarData() {
+  google.script.run
+    .withSuccessHandler(resp => {
+      datosOriginales = Array.isArray(resp) ? resp : [];
+      datosMostrados = [...datosOriginales];
+      llenarFiltros();
+      actualizarContador();
+      renderTabla(datosMostrados);
+    })
+    .withFailureHandler(err => console.error("Error al obtener datos:", err))
+    .getAllData();
+}
+
+// ----------------------
+// Filtros con debounce
+// ----------------------
+document.addEventListener("input", e => {
+  if (e.target && e.target.id === "fTexto") {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(aplicarFiltroTexto, 300);
+  }
+});
+
+function aplicarFiltroTexto() {
+  const texto = (document.getElementById("fTexto")?.value || "").toLowerCase().trim();
+  const palabras = texto.split(/\s+/);
+
+  datosMostrados = datosOriginales.filter(r => {
+    const combinado = (r.apellidos + " " + r.nombres).toLowerCase();
+    return palabras.every(palabra => combinado.includes(palabra));
+  });
+
+  // Filtros select
+  const g = (document.getElementById("fGrado")?.value || "").trim();
+  const ieSel = (document.getElementById("fIE")?.value || "").trim();
+  const cat = (document.getElementById("fCategoria")?.value || "").trim();
+
+  if (g || ieSel || cat) {
+    datosMostrados = datosMostrados.filter(r => {
+      if (g && r.grado !== g) return false;
+      if (ieSel && r.ie !== ieSel) return false;
+      if (cat && r.categoria !== cat) return false;
+      return true;
+    });
+  }
+
+  if (ordenActual.col) ordenar(ordenActual.col, false);
+  else renderTabla(datosMostrados);
+}
+
+function renderTabla(array) {
+  const tbody = document.getElementById("tbodyParticipantes");
+  if (!tbody) return;
+
+  const cont = document.getElementById("contador");
+  if (cont)
+    cont.textContent = `Mostrando ${array.length} registro${array.length !== 1 ? "s" : ""}`;
+
+  // Limpiar sin forzar reflow
+  tbody.innerHTML = "";
+
+  // Usar fragment para evitar miles de writes al DOM
+  const fragment = document.createDocumentFragment();
+
+  array.forEach(row => {
+    const tr = document.createElement("tr");
+
+    tr.insertAdjacentHTML("beforeend", `
+      <td>${escapeHtml(row.id)}</td>
+      <td>${escapeHtml(row.apellidos)}</td>
+      <td>${escapeHtml(row.nombres)}</td>
+      <td>${escapeHtml(row.grado)}</td>
+      <td>${escapeHtml(row.ie)}</td>
+      <td>${escapeHtml(row.categoria)}</td>
+      <td>${escapeHtml(row.puntaje)}</td>
+      <td>${escapeHtml(row.hora)}</td>
+      <td>
+        <button class="btn-edit" onclick="editarRegistro('${escapeHtmlAttr(row.id)}')">✏️</button>
+        <button class="btn-delete" onclick="eliminarRegistro('${escapeHtmlAttr(row.id)}')">🗑️</button>
+      </td>
+    `);
+
+    fragment.appendChild(tr);
+  });
+
+  tbody.appendChild(fragment); // un solo insert → 50x más rápido
+}
+
+function llenarFiltros() {
+  const selGrado = document.getElementById("fGrado");
+  const selIE = document.getElementById("fIE");
+  const selCat = document.getElementById("fCategoria");
+  if (!selGrado || !selIE || !selCat) return;
+
+  selGrado.innerHTML = '<option value="">Filtrar por Grado</option>';
+  selIE.innerHTML = '<option value="">Filtrar por Institución</option>';
+  selCat.innerHTML = '<option value="">Filtrar por Categoría</option>';
+
+  const grados = [...new Set(datosOriginales.map(r => r.grado))].filter(x => x).sort((a,b)=>a.localeCompare(b, undefined, {numeric:true}));
+  const ies = [...new Set(datosOriginales.map(r => r.ie))].filter(x => x).sort();
+  const cats = [...new Set(datosOriginales.map(r => r.categoria))].filter(x => x).sort();
+
+  grados.forEach(g => selGrado.innerHTML += `<option value="${escapeHtmlAttr(g)}">${escapeHtml(g)}</option>`);
+  ies.forEach(i => selIE.innerHTML += `<option value="${escapeHtmlAttr(i)}">${escapeHtml(i)}</option>`);
+  cats.forEach(c => selCat.innerHTML += `<option value="${escapeHtmlAttr(c)}">${escapeHtml(c)}</option>`);
+
+  selGrado.onchange = aplicarFiltros;
+  selIE.onchange = aplicarFiltros;
+  selCat.onchange = aplicarFiltros;
+}
+
+function aplicarFiltros() {
+  aplicarFiltroTexto();
+}
+
+function resetFiltros() {
+  ["fGrado","fIE","fCategoria","fTexto"].forEach(id => document.getElementById(id).value="");
+  datosMostrados = [...datosOriginales];
+  if (ordenActual.col) ordenar(ordenActual.col, false);
+  else renderTabla(datosMostrados);
+}
+
+function ordenar(col, toggle = true) {
+  if (toggle) {
+    if (ordenActual.col !== col) {
+      ordenActual.col = col;
+      ordenActual.asc = true;
+    } else {
+      ordenActual.asc = !ordenActual.asc;
+    }
+  }
+
+  datosMostrados.sort((a, b) => {
+    let va = a[col] ?? "";
+    let vb = b[col] ?? "";
+
+    // Ordenar por puntaje numérico
+    if (col === "puntaje") {
+      va = Number(va) || 0;
+      vb = Number(vb) || 0;
+      return ordenActual.asc ? va - vb : vb - va;
+    }
+
+    // Ordenar por hora (h:m:s)
+    if (col === "hora") {
+      const toSegundos = s => {
+        if (!s) return 0;
+        const match = s.match(/^(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?$/); // acepta 1 o 2 dígitos
+        if (!match) return 0;
+        const h = Number(match[1]) || 0;
+        const m = Number(match[2]) || 0;
+        const sec = Number(match[3]) || 0;
+        return h * 3600 + m * 60 + sec; // convertir todo a segundos
+      };
+      va = toSegundos(va);
+      vb = toSegundos(vb);
+      return ordenActual.asc ? va - vb : vb - va;
+    }
+
+    // Orden alfabético/numerico por defecto
+    return ordenActual.asc
+      ? String(va).localeCompare(String(vb), undefined, { numeric: true })
+      : String(vb).localeCompare(String(va), undefined, { numeric: true });
+  });
+
+  renderTabla(datosMostrados);
+}
+
+
+function actualizarContador() {
+  const cont = document.getElementById("contador");
+  if (!cont) return;
+  cont.textContent = `Mostrando ${datosMostrados.length} registro${datosMostrados.length !== 1 ? "s" : ""}`;
+}
+
+function escapeHtml(str) {
+  if (!str) return "";
+  return String(str).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
+}
+function escapeHtmlAttr(str){ return escapeHtml(str).replace(/"/g,"&quot;"); }
+
+// ----------------------
+// Modal y edición
+// ----------------------
+function abrirModal() {
+  limpiarModal();
+  const modal = document.getElementById("modalAgregar");
+  modal.removeAttribute("data-edit-id");
+  modal.style.display = "flex";
+
+  // ID solo para nuevo registro
+  const nuevoId = generarPrefijoAleatorio() + "_" + getFechaHoraString();
+  document.getElementById("mId").value = nuevoId;
+  document.getElementById("mId").disabled = true;
+
+  // Llenar selects instantáneos desde listas cargadas
+  aplicarListasEnModal();
+}
+
+function editarRegistro(id) {
+  const fila = datosMostrados.find(r => r.id === id);
+  if (!fila) { console.error("ID no encontrado:", id); return; }
+
+  const modal = document.getElementById("modalAgregar");
+  modal.setAttribute("data-edit-id", id);
+  modal.style.display = "flex";
+
+  document.getElementById("mId").value = fila.id;
+  document.getElementById("mId").disabled = true;
+  document.getElementById("mApellidos").value = fila.apellidos;
+  document.getElementById("mNombres").value = fila.nombres;
+  document.getElementById("mPuntaje").value = fila.puntaje;
+
+  // Separar la hora en los 3 campos
+  const partes = (fila.hora || "00:00:00").split(":");
+  document.getElementById("hora").value = partes[0].padStart(2,"0");
+  document.getElementById("minutos").value = partes[1]?.padStart(2,"0") || "00";
+  document.getElementById("segundos").value = partes[2]?.padStart(2,"0") || "00";
+
+  // Aplicar selects desde listas
+  aplicarListasEnModal(fila);
+}
+function cerrarModal() {
+  document.getElementById("modalAgregar").style.display="none";
+  document.getElementById("modalAgregar").removeAttribute("data-edit-id");
+}
+
+function limpiarModal() {
+  ["mApellidos","mNombres","mGrado","institucion","mCategoria","mPuntaje"].forEach(id => document.getElementById(id).value="");
+
+  // Limpiar los 3 campos de hora
+  ["hora","minutos","segundos"].forEach(id => document.getElementById(id).value="");
+}
+
+function guardarRegistro() {
+  const id = document.getElementById("mId").value;
+  const apellidos = document.getElementById("mApellidos").value.trim();
+  const nombres = document.getElementById("mNombres").value.trim();
+  const grado = document.getElementById("mGrado").value.trim();
+  const ie = document.getElementById("institucion").value.trim();
+  const categoria = document.getElementById("mCategoria").value.trim();
+  const puntaje = document.getElementById("mPuntaje").value || "";
+
+  // Normalizar hora a hh:mm:ss
+  const h = document.getElementById("hora").value.padStart(2,'0');
+  const m = document.getElementById("minutos").value.padStart(2,'0');
+  const s = document.getElementById("segundos").value.padStart(2,'0');
+  const hora = `${h}:${m}:${s}`;
+
+  if(!apellidos || !nombres || !grado || !ie || !categoria){ 
+    alert("Por favor completa todos los campos obligatorios (*)"); 
+    return; 
+  }
+
+  const editId = document.getElementById("modalAgregar").getAttribute("data-edit-id");
+  const registro = { id, apellidos, nombres, grado, ie, categoria, puntaje, hora };
+
+  if(editId) {
+    google.script.run
+      .withSuccessHandler(() => { cerrarModal(); cargarData(); })
+      .editarRegistroSheet(registro);
+  } else {
+    google.script.run
+      .withSuccessHandler(() => { cerrarModal(); cargarData(); })
+      .agregarRegistro(registro);
+  }
+}
+
+function eliminarRegistro(id) {
+  if (!id) return;
+  if (!confirm("¿Eliminar registro?")) return;
+
+  google.script.run
+    .withSuccessHandler(() => cargarData())
+    .eliminarRegistro(id); // llama a la función de code.gs
+}
+
+// ----------------------
+// Opciones cargadas al inicio
+// ----------------------
+function cargarOpcionesInicial() {
+  google.script.run.withSuccessHandler(listas => {
+    listasOpciones = listas;
+    // Opcional: asignar al modal si está abierto
+    aplicarListasEnModal();
+  }).getOpciones();
+}
+
+function aplicarListasEnModal(fila = null) {
+  const selCategoria = document.getElementById("mCategoria");
+  const selGrado = document.getElementById("mGrado");
+  const selIE = document.getElementById("institucion");
+
+  [selCategoria, selGrado, selIE].forEach(s => s.innerHTML="");
+
+  const agregarOpciones = (select, opciones, placeholder) => {
+    const inicial = document.createElement("option");
+    inicial.value = "";
+    inicial.textContent = placeholder;
+    select.appendChild(inicial);
+    opciones.forEach(op => {
+      const opt = document.createElement("option");
+      opt.value = op;
+      opt.textContent = op;
+      select.appendChild(opt);
+    });
+    if(fila){
+      if(select.id==="mCategoria") select.value = fila.categoria || "";
+      if(select.id==="mGrado") select.value = fila.grado || "";
+      if(select.id==="institucion") select.value = fila.ie || "";
+    }
+  };
+
+  agregarOpciones(selCategoria, listasOpciones.categorias, "Seleccione Categoría...");
+  agregarOpciones(selGrado, listasOpciones.grados, "Seleccione Grado...");
+  agregarOpciones(selIE, listasOpciones.instituciones, "Seleccione Institución...");
+}
+
+// ----------------------
+// Botón actualizar opciones
+// ----------------------
+document.addEventListener("DOMContentLoaded", () => {
+  const btn = document.getElementById("btnActualizarOpciones");
+  if(btn) btn.onclick = () => cargarOpcionesInicial();
+});
+
+// ----------------------
+// ID helpers
+// ----------------------
+function getFechaHoraString() {
+  const now = new Date();
+  const pad = n => n.toString().padStart(2,"0");
+  return now.getFullYear() + pad(now.getMonth()+1) + pad(now.getDate()) + pad(now.getHours()) + pad(now.getMinutes()) + pad(now.getSeconds());
+}
+
+function generarPrefijoAleatorio(length=4) {
+  const chars = 'bcdfghjklmnpqrstvwxyz';
+  let res = '';
+  for(let i=0;i<length;i++) res += chars.charAt(Math.floor(Math.random()*chars.length));
+  return res;
+}
+
+function formatoHora(input) {
+  let value = input.value.replace(/\D/g, '');
+
+  if (value.length > 6) value = value.slice(0, 6);
+
+  let h = value.slice(0,2).padStart(2,'0');
+  let m = value.slice(2,4).padStart(2,'0');
+  let s = value.slice(4,6).padStart(2,'0');
+
+  if (Number(h) > 24) h = '24';
+  if (Number(m) > 59) m = '59';
+  if (Number(s) > 59) s = '59';
+
+  let result = h;
+  if (m) result += ':' + m;
+  if (s) result += ':' + s;
+
+  input.value = result;
+}
+
+
+function moverFocus(input, siguienteId, max) {
+  // Quitar todo lo que no sea número
+  input.value = input.value.replace(/\D/g, '');
+  
+  // Validar límite
+  if (input.value !== '' && Number(input.value) > max) input.value = max.toString().padStart(2,'0');
+
+  // Si escribiste 2 dígitos, pasar al siguiente input
+  if (input.value.length >= 2 && siguienteId) {
+    document.getElementById(siguienteId).focus();
+    document.getElementById(siguienteId).select();
+  }
+}
+
+function ponerHoraActual() {
+  const now = new Date();
+  document.getElementById('hora').value = String(now.getHours()).padStart(2,'0');
+  document.getElementById('minutos').value = String(now.getMinutes()).padStart(2,'0');
+  document.getElementById('segundos').value = String(now.getSeconds()).padStart(2,'0');
+}
+
+function capitalizar(input) {
+  input.value = input.value
+    .split(' ')                     // separa por espacios
+    .map(word => {
+      if (word.length === 0) return '';
+      return word[0].toUpperCase() + word.slice(1).toLowerCase();
+    })
+    .join(' ');                     // vuelve a unir
+}
+</script>

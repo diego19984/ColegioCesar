@@ -1,0 +1,27 @@
+<script>
+  function validarClave() {
+  const clave = document.getElementById("claveAdmin").value.trim();
+
+  google.script.run
+    .withSuccessHandler(function(resp) {
+      if (resp === true) {
+        document.getElementById("btnDescargarPDF").style.display = "inline-block";
+      } else {
+        alert("❌ Clave incorrecta");
+      }
+    })
+    .withFailureHandler(err => alert("Error: " + err))
+    .validarClaveServidor(clave);
+}
+
+   
+
+
+function descargarRanking() {
+  google.script.run
+    .withSuccessHandler(function(url) {
+      window.open(url, "_blank"); // abre el PDF en otra pestaña
+    })
+    .generarRankingPdfWeb();
+}
+</script>
