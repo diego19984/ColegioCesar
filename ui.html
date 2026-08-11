@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <title>Mi Proyecto</title>
+    <!-- Íconos de Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <?!= include('style'); ?>
+  </head>
+  <body>
+    <div class="contenedor">
+      <aside class="menu-lateral">
+        <h2>
+          <i class="fa-solid fa-bars"></i>
+          <span class="titulo-menu">Menú</span>
+        </h2>
+        <ul>
+          <li onclick="cargarPagina('pageInicio')">
+            <i class="fa fa-home"></i><span>Inicio</span>
+          </li>
+          <li onclick="cargarPagina('pageFormulario')">
+            <i class="fa fa-calendar-alt"></i><span>Formulario</span>
+          </li>
+          <li onclick="cargarPagina('acerca')">
+            <i class="fa fa-info-circle"></i><span>Acerca de</span>
+          </li>
+        </ul>
+      </aside>
+
+      <main id="contenido-principal" class="contenido">
+        <h1>Bienvenido a mi WebApp</h1>
+        <p>Selecciona una opción del menú para comenzar.</p>
+      </main>
+    </div>
+
+    <?!= include('scriptPagina'); ?>
+    <?!= include('scriptRanking'); ?>
+  </body>
+</html>

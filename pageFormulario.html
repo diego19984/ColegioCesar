@@ -1,0 +1,117 @@
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+
+    <h2>Lista de Participantes</h2>
+
+    <!-- Zona admin (arriba a la derecha) -->
+    <div id="zonaAdmin" style="display:flex; gap:6px; align-items:center;">
+
+      <input type="password" id="claveAdmin"
+           placeholder="Clave"
+           style="padding:5px; width:120px;">
+
+      <button onclick="validarClave()" class="btn-admin">
+        Validar
+      </button>
+
+      <button id="btnDescargarPDF"
+        onclick="descargarRanking()"
+        class="btn-admin"
+        style="display: none;">
+
+        📄 PDF Ranking
+      </button>
+    </div>
+
+  </div>
+
+  <!-- FILTROS: solo Grado, Institución, Categoría -->
+  <div class="filtros" style="margin-bottom:12px;">
+    <input type="text" id="fTexto" placeholder="Buscar por Apellidos o Nombres" style="min-width:250px;">
+    <button class="btn-reset" onclick="cargarPagina('pageFormulario')">Actualizar</button>
+  </div>
+  <div class="filtros" style="margin-bottom:12px;">
+
+    <select id="fGrado" style="min-width:140px;">
+      <option value="">Filtrar por Grado</option>
+    </select>
+
+    <select id="fIE" style="min-width:220px;">
+      <option value="">Filtrar por Institución</option>
+    </select>
+
+    <select id="fCategoria" style="min-width:140px;">
+      <option value="">Filtrar por Categoría</option>
+    </select>
+
+    <button class="btn-reset" onclick="resetFiltros()" style="margin-left:8px;">Reset</button>
+  </div>
+
+  <button onclick="abrirModal()" class="btn-agregar">
+  <i class="fa fa-plus"></i> Agregar
+  </button>
+
+  <div id="contador" style="margin: 10px 0; font-weight: bold;">
+    Mostrando 0 registros
+  </div>
+
+  <table id="tablaParticipantes">
+    <thead>
+      <tr>
+        <th>ID <span class="flecha">↕</span></th> <!-- Nueva columna -->
+        <th onclick="ordenar('apellidos')">Apellidos <span class="flecha">↕</span></th>
+        <th onclick="ordenar('nombres')">Nombres <span class="flecha">↕</span></th>
+        <th onclick="ordenar('grado')">Grado <span class="flecha">↕</span></th>
+        <th onclick="ordenar('ie')">Institución <span class="flecha">↕</span></th>
+        <th onclick="ordenar('categoria')">Categoría <span class="flecha">↕</span></th>
+        <th onclick="ordenar('puntaje')">Puntaje <span class="flecha">↕</span></th>
+        <th onclick="ordenar('hora')">Hora <span class="flecha">↕</span></th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody id="tbodyParticipantes"></tbody>
+  </table>
+
+  <div id="modalAgregar" class="modal">
+    <div class="modal-contenido">
+      <h3>Agregar Participante</h3>
+
+      <label>ID</label>
+      <input type="text" id="mId" readonly style="background:#eee; color:#555;">
+
+      <label>Apellidos *</label>
+      <input type="text" id="mApellidos" required oninput="capitalizar(this)">
+
+      <label>Nombres *</label>
+      <input type="text" id="mNombres" required oninput="capitalizar(this)">
+
+      <label for="mGrado">Grado *</label>
+      <select id="mGrado" name="mGrado" required><option value="">Seleccione...</option></select>
+
+      <label for="institucion">Institución *</label>
+      <select id="institucion" name="institucion" required><option value="">Seleccione...</option></select>
+
+      <label for = "mCategoria" >Categoría *</label>
+      <select id="mCategoria" name="mCategoria" required><option value="">Seleccione...</option></select>
+
+      <label>Puntaje</label>
+      <input type="number" id="mPuntaje" min="0">
+
+      <label>HORA ENTREGA</label>
+      <div class="hora-container">
+        <input type="text" id="hora" maxlength="2" oninput="moverFocus(this,'minutos',23)">
+        <span>:</span>
+        <input type="text" id="minutos" maxlength="2" oninput="moverFocus(this,'segundos',59)">
+        <span>:</span>
+        <input type="text" id="segundos" maxlength="2" oninput="moverFocus(this,null,59)">
+        <button class="btn-hora-actual" onclick="ponerHoraActual()">Ahora</button>
+      </div>
+
+
+      <div class="modal-botones">
+        <button class="btn-guardar" onclick="guardarRegistro()">Guardar</button>
+        <button class="btn-cerrar" onclick="cerrarModal()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>

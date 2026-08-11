@@ -1,0 +1,398 @@
+<style>
+/* ------------------ */
+/*   ESTILOS ORIGINALES   */
+/* ------------------ */
+
+body {
+  margin: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background-color: #f4f4f4;
+}
+
+/* Estructura general */
+.contenedor {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* --- encabezado del menú --- */
+.menu-lateral h2 {
+  text-align: center;
+  padding: 15px 0;
+  background-color: #8e2424;
+  margin: 0;
+  font-size: 1.2em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+}
+
+.menu-lateral .titulo-menu {
+  display: inline;
+  transition: opacity 0.3s ease;
+}
+
+.menu-lateral:hover .titulo-menu {
+  opacity: 1;
+}
+
+.menu-lateral:not(:hover) .titulo-menu {
+  opacity: 0;
+  width: 0;
+  overflow: hidden;
+}
+
+/* Menú lateral */
+.menu-lateral {
+  background-color: #6a1b1b;
+  color: white;
+  width: 70px;
+  transition: width 0.3s ease;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.menu-lateral:hover {
+  width: 220px;
+}
+
+.menu-lateral ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  flex-grow: 1;
+}
+
+.menu-lateral li {
+  padding: 15px 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: background-color 0.3s, transform 0.2s;
+}
+
+.menu-lateral li:hover {
+  background-color: #8e2424;
+  transform: translateX(4px);
+}
+
+.menu-lateral li i {
+  font-size: 1.2em;
+  width: 25px;
+  text-align: center;
+}
+
+.menu-lateral li span {
+  display: none;
+}
+
+.menu-lateral:hover li span {
+  display: inline;
+}
+
+/* Contenido principal */
+.contenido {
+  flex-grow: 1;
+  padding: 30px;
+  background-color: white;
+  box-shadow: -2px 0 5px rgba(0,0,0,0.1);
+  animation: fadeIn 0.3s ease;
+}
+
+/* Animación */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* --------------------------- */
+/*   ESTILOS NUEVOS (MISMA PALETA DE COLORES)   */
+/* --------------------------- */
+
+/* Tarjetas */
+.card {
+  padding: 20px;
+  background: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+  margin-bottom: 20px;
+}
+
+/* Títulos */
+.card h2 {
+  margin: 0 0 15px 0;
+  color: #6a1b1b;
+  border-left: 5px solid #8e2424;
+  padding-left: 10px;
+}
+
+/* Botón Agregar */
+.btn-agregar {
+  background-color: #8e2424;
+  border: none;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  margin-bottom: 12px;
+  transition: background-color 0.3s ease;
+}
+
+.btn-agregar:hover {
+  background-color: #a52a2a;
+}
+
+/* Botones editar y eliminar */
+.btn-edit, .btn-delete {
+  padding: 4px 8px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.btn-edit {
+  background: #d4a017;
+  color: white;
+}
+
+.btn-edit:hover {
+  background: #b48713;
+}
+
+.btn-delete {
+  background: #b71c1c;
+  color: white;
+}
+
+.btn-delete:hover {
+  background: #8e1818;
+}
+
+/* TABLA */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+thead {
+  background-color: #6a1b1b;
+  color: white;
+}
+
+th {
+  padding: 10px;
+  text-align: left;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+}
+
+th:hover {
+  background-color: #8e2424;
+}
+
+td {
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+tr:nth-child(even) {
+  background:#faf4f4;
+}
+
+/* Flechas */
+.flecha {
+  font-size: 12px;
+  opacity: 0.6;
+}
+
+/* Hover filas */
+tbody tr:hover {
+  background: #ffecec;
+}
+
+/* Filtros */
+.filtros {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+}
+
+.filtros input,
+.filtros select {
+  padding: 6px 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.btn-reset {
+  background: #8e2424;
+  color: white;
+  padding: 7px 15px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.btn-reset:hover {
+  background: #6a1b1b;
+}
+
+/* ---------------------- */
+/*         MODAL          */
+/* ---------------------- */
+
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 2000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-contenido {
+  background: white;
+  padding: 20px;
+  width: 420px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  animation: fadeIn 0.3s ease;
+}
+
+.modal-contenido h3 {
+  margin-top: 0;
+  text-align: center;
+  color: #6a1b1b;
+}
+
+.modal-contenido label {
+  display: block;
+  margin-top: 10px;
+  font-weight: bold;
+}
+
+.modal-contenido input{
+  width: 92%;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #bbb;
+  margin-top: 5px;
+}
+
+.modal-contenido select{
+  width: 96%;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #bbb;
+  margin-top: 5px;
+}
+
+
+.modal-botones {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+.btn-guardar {
+  background: #8e2424;
+  color: white;
+  padding: 10px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.btn-cerrar {
+  background: #555;
+  color: white;
+  padding: 10px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.btn-guardar:hover { background: #6a1b1b; }
+.btn-cerrar:hover { background: #333; }
+
+
+.hora-container {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 5px;
+}
+
+.hora-container input {
+  width: 40px; /* tamaño pequeño */
+  padding: 6px 4px; /* ajustar altura */
+  text-align: center;
+  border-radius: 6px;
+  border: 1px solid #bbb;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.hora-container span {
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.hora-container .btn-hora-actual {
+  margin-left: auto; /* pegar a la derecha */
+  margin-top: 4px;   /* bajar el botón */
+  padding: 6px 12px;
+  background-color: #8e2424;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  height: 30px; /* igual altura que inputs */
+}
+
+.hora-container .btn-hora-actual:hover {
+  background-color: #a52a2a;
+}
+
+/* ---------------------- */
+/*  BOTONES ADMIN (Validar / PDF) */
+/* ---------------------- */
+
+.btn-admin {
+  background-color: #8e2424;
+  color: white;
+  padding: 7px 14px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.btn-admin:hover {
+  background-color: #a52a2a;
+}
+
+/* Input clave */
+#claveAdmin {
+  padding: 6px 10px !important;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+</style>
