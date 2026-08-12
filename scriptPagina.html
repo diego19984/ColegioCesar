@@ -234,11 +234,16 @@ function editarRegistro(id) {
   document.getElementById("mNombres").value = fila.nombres;
   document.getElementById("mPuntaje").value = fila.puntaje;
 
-  // Separar la hora en los 3 campos
-  const partes = (fila.hora || "00:00:00").split(":");
-  document.getElementById("hora").value = partes[0].padStart(2,"0");
-  document.getElementById("minutos").value = partes[1]?.padStart(2,"0") || "00";
-  document.getElementById("segundos").value = partes[2]?.padStart(2,"0") || "00";
+  if (fila.hora) {
+    const partes = fila.hora.split(":");
+    document.getElementById("hora").value = partes[0]?.padStart(2,"0") || "";
+    document.getElementById("minutos").value = partes[1]?.padStart(2,"0") || "";
+    document.getElementById("segundos").value = partes[2]?.padStart(2,"0") || "";
+  } else {
+    document.getElementById("hora").value = "";
+    document.getElementById("minutos").value = "";
+    document.getElementById("segundos").value = "";
+  }
 
   // Aplicar selects desde listas
   aplicarListasEnModal(fila);
@@ -271,10 +276,23 @@ function guardarRegistro() {
   const puntaje = document.getElementById("mPuntaje").value || "";
 
   // Normalizar hora a hh:mm:ss
-  const h = document.getElementById("hora").value.padStart(2,'0');
-  const m = document.getElementById("minutos").value.padStart(2,'0');
-  const s = document.getElementById("segundos").value.padStart(2,'0');
-  const hora = `${h}:${m}:${s}`;
+  const hRaw = document.getElementById("hora").value;
+  const mRaw = document.getElementById("minutos").value;
+  const sRaw = document.getElementById("segundos").value;
+  const hora = (hRaw || mRaw || sRaw)
+    ? `${hRaw.padStart(2,'0')}:${mRaw.padStart(2,'0')}:${sRaw.padStart(2,'0')}`
+    : "";
+
+  if (hora && !validarHoraEntrega(hora)) {
+    alert("Validar la hora: la hora de entrega debe ser entre las 09:00 y las 19:00.");
+    return;
+  }
+
+  const puntajeNum = Number(puntaje);
+  if (puntaje !== "" && (!Number.isInteger(puntajeNum) || puntajeNum <= 0 || puntajeNum > 200)) {
+    alert("Validar el puntaje: debe ser un número entero mayor a 0 y como máximo 200.");
+    return;
+  }
 
   const libre = isLibreInstitucion(ie);
   if (!apellidos || !nombres || !grado || !ie || (!libre && !categoria)) {
@@ -478,6 +496,23 @@ function moverFocus(input, siguienteId, max) {
     document.getElementById(siguienteId).focus();
     document.getElementById(siguienteId).select();
   }
+}
+
+function validarHoraEntrega(hora) {
+  if (!hora) return false;
+  const match = hora.match(/^(\d{2}):(\d{2}):(\d{2})$/);
+  if (!match) return false;
+
+  const h = Number(match[1]);
+  const m = Number(match[2]);
+  const s = Number(match[3]);
+  if (h < 0 || h > 23 || m < 0 || m > 59 || s < 0 || s > 59) return false;
+
+  const segundosTotales = h * 3600 + m * 60 + s;
+  const inicio = 9 * 3600; // 09:00:00
+  const fin = 19 * 3600; // 19:00:00
+
+  return segundosTotales >= inicio && segundosTotales <= fin;
 }
 
 function ponerHoraActual() {
