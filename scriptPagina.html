@@ -1,7 +1,4 @@
 <script>
-/* -----------------------------------
-   Script completo optimizado
-   ----------------------------------- */
 
 let datosOriginales = [];
 let datosMostrados = [];
@@ -10,7 +7,7 @@ let debounceTimer;
 let guardandoRegistro = false; // Bandera para evitar múltiples guardados
 
 // Listas de opciones cargadas al inicio
-let listasOpciones = { categorias: [], grados: [], instituciones: [] };
+let listasOpciones = { grados: [], instituciones: [], categoriaPorInstitucion: {} };
 
 function cargarPagina(nombre) {
   google.script.run
@@ -93,7 +90,6 @@ function renderTabla(array) {
     const tr = document.createElement("tr");
 
     tr.insertAdjacentHTML("beforeend", `
-      <td>${escapeHtml(row.id)}</td>
       <td>${escapeHtml(row.apellidos)}</td>
       <td>${escapeHtml(row.nombres)}</td>
       <td>${escapeHtml(row.grado)}</td>
@@ -216,7 +212,7 @@ function abrirModal() {
   modal.style.display = "flex";
 
   // ID solo para nuevo registro
-  const nuevoId = generarPrefijoAleatorio() + "_" + getFechaHoraString();
+  const nuevoId =  getFechaHoraString() + "_" + generarPrefijoAleatorio() ;
   document.getElementById("mId").value = nuevoId;
   document.getElementById("mId").disabled = true;
 
@@ -280,9 +276,10 @@ function guardarRegistro() {
   const s = document.getElementById("segundos").value.padStart(2,'0');
   const hora = `${h}:${m}:${s}`;
 
-  if(!apellidos || !nombres || !grado || !ie || !categoria){ 
-    alert("Por favor completa todos los campos obligatorios (*)"); 
-    return; 
+  const libre = isLibreInstitucion(ie);
+  if (!apellidos || !nombres || !grado || !ie || (!libre && !categoria)) {
+    alert("Por favor completa todos los campos obligatorios (*)");
+    return;
   }
 
   // Establecer bandera de guardando y deshabilitar botón
@@ -367,6 +364,7 @@ function aplicarListasEnModal(fila = null) {
   const selGrado = document.getElementById("mGrado");
   const selIE = document.getElementById("institucion");
 
+  selCategoria.disabled = true;
   [selCategoria, selGrado, selIE].forEach(s => s.innerHTML="");
 
   const agregarOpciones = (select, opciones, placeholder) => {
@@ -380,16 +378,47 @@ function aplicarListasEnModal(fila = null) {
       opt.textContent = op;
       select.appendChild(opt);
     });
-    if(fila){
-      if(select.id==="mCategoria") select.value = fila.categoria || "";
-      if(select.id==="mGrado") select.value = fila.grado || "";
-      if(select.id==="institucion") select.value = fila.ie || "";
+    if (fila) {
+      if (select.id === "institucion") select.value = fila.ie || "";
+      if (select.id === "mCategoria") {
+        const cat = String(fila.categoria || "").trim();
+        select.value = cat.toUpperCase() === "LIBRE" ? "" : cat;
+      }
+      if (select.id === "mGrado") select.value = fila.grado || "";
     }
   };
 
+  agregarOpciones(selIE, listasOpciones.instituciones, "Seleccione Institución...");
   agregarOpciones(selCategoria, listasOpciones.categorias, "Seleccione Categoría...");
   agregarOpciones(selGrado, listasOpciones.grados, "Seleccione Grado...");
-  agregarOpciones(selIE, listasOpciones.instituciones, "Seleccione Institución...");
+
+  selIE.onchange = rellenarCategoriaDesdeIE;
+  if (fila) rellenarCategoriaDesdeIE();
+}
+
+function isLibreInstitucion(ie) {
+  if (!ie) return false;
+  return ie.toString().trim().toUpperCase() === "LIBRE";
+}
+
+function rellenarCategoriaDesdeIE() {
+  const ie = document.getElementById("institucion").value.trim();
+  const selCategoria = document.getElementById("mCategoria");
+  if (!selCategoria) return;
+
+  if (isLibreInstitucion(ie)) {
+    selCategoria.value = "";
+    selCategoria.disabled = false;
+    return;
+  }
+
+  const categoria = listasOpciones.categoriaPorInstitucion?.[ie.toUpperCase()] || "";
+  if (categoria && categoria.toString().trim().toUpperCase() !== "LIBRE") {
+    selCategoria.value = categoria;
+  } else {
+    selCategoria.value = "";
+  }
+  selCategoria.disabled = true;
 }
 
 // ----------------------
