@@ -14,12 +14,11 @@
         Validar
       </button>
 
-      <button id="btnDescargarPDF"
-        onclick="descargarRanking()"
-        class="btn-admin"
-        style="display: none;">
-
+      <button id="btnDescargarPDF" onclick="descargarRanking()" class="btn-admin"style="display: none;">
         📄 PDF Ranking
+      </button>
+      <button id="btnImprimir" onclick="imprimirFiltrados()" class="btn-admin" style="display: none;">
+        <i class="fa fa-print"></i> Imprimir
       </button>
     </div>
 
@@ -28,7 +27,7 @@
   <!-- FILTROS: solo Grado, Institución, Categoría -->
   <div class="filtros" style="margin-bottom:12px;">
     <input type="text" id="fTexto" placeholder="Buscar por Apellidos o Nombres" style="min-width:250px;">
-    <button class="btn-reset" onclick="cargarPagina('pageFormulario')">Actualizar</button>
+    <button class="btn-reset" onclick="cargarData()">Actualizar</button>
   </div>
   <div class="filtros" style="margin-bottom:12px;">
 
@@ -36,12 +35,12 @@
       <option value="">Filtrar por Grado</option>
     </select>
 
-    <select id="fIE" style="min-width:220px;">
-      <option value="">Filtrar por Institución</option>
-    </select>
-
     <select id="fCategoria" style="min-width:140px;">
       <option value="">Filtrar por Categoría</option>
+    </select>
+
+    <select id="fIE" style="min-width:220px;">
+      <option value="">Filtrar por Institución</option>
     </select>
 
     <button class="btn-reset" onclick="resetFiltros()" style="margin-left:8px;">Reset</button>

@@ -6,6 +6,7 @@
     .withSuccessHandler(function(resp) {
       if (resp === true) {
         document.getElementById("btnDescargarPDF").style.display = "inline-block";
+        document.getElementById("btnImprimir").style.display = "inline-block";
       } else {
         alert("❌ Clave incorrecta");
       }
