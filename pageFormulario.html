@@ -58,6 +58,7 @@
   <table id="tablaParticipantes">
     <thead>
       <tr>
+        <th onclick="ordenar('puesto')">Puesto <span class="flecha">↕</span></th>
         <th onclick="ordenar('apellidos')">Apellidos <span class="flecha">↕</span></th>
         <th onclick="ordenar('nombres')">Nombres <span class="flecha">↕</span></th>
         <th onclick="ordenar('grado')">Grado <span class="flecha">↕</span></th>
@@ -99,7 +100,11 @@
 
       <label>HORA ENTREGA</label>
       <div class="hora-container">
-        <input type="text" id="mHora" placeholder="hh:mm:ss" maxlength="8" oninput="formatoHora(this)">
+        <input type="text" id="hora" maxlength="2" oninput="moverFocus(this,'minutos',23)">
+        <span>:</span>
+        <input type="text" id="minutos" maxlength="2" oninput="moverFocus(this,'segundos',59)">
+        <span>:</span>
+        <input type="text" id="segundos" maxlength="2" oninput="moverFocus(this,null,59)">
         <button class="btn-hora-actual" onclick="ponerHoraActual()">Ahora</button>
       </div>
 
