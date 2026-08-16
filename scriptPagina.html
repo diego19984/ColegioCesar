@@ -30,9 +30,10 @@ function computeRankings() {
 
   Object.values(mapa).forEach(group => {
     group.sort((a, b) => {
-      const pa = Number(a.puntaje) || 0;
-      const pb = Number(b.puntaje) || 0;
-      if (pb !== pa) return pb - pa; // puntaje desc
+      const parseP = v => (v === null || v === undefined || String(v).trim() === '') ? -1 : Number(v);
+      const pa = parseP(a.puntaje);
+      const pb = parseP(b.puntaje);
+      if (pb !== pa) return pb - pa; // puntaje desc, vacíos (-1) quedan al final
       return toSegundos(a.hora) - toSegundos(b.hora); // hora asc (más temprano mejor)
     });
     group.forEach((r, i) => r.puesto = i + 1);
@@ -227,8 +228,9 @@ function ordenar(col, toggle = true) {
 
     // Ordenar por puntaje numérico (si empatan, usar el puesto maestro como desempate)
     if (col === "puntaje") {
-      va = Number(va) || 0;
-      vb = Number(vb) || 0;
+      const parseP = v => (v === null || v === undefined || String(v).trim() === '') ? -1 : Number(v);
+      va = parseP(va);
+      vb = parseP(vb);
       if (va !== vb) return ordenActual.asc ? va - vb : vb - va;
 
       const pa = Number(a.puesto) || 999999;
@@ -434,6 +436,38 @@ function guardarRegistro() {
       })
       .agregarRegistro(registro);
   }
+}
+
+function imprimirFiltrados() {
+  const btn = document.getElementById('btnImprimir');
+  const prevText = btn ? btn.textContent : null;
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Generando...';
+  }
+
+  const grado = (document.getElementById('fGrado')?.value || '');
+  const ie = (document.getElementById('fIE')?.value || '');
+  const categoria = (document.getElementById('fCategoria')?.value || '');
+  const texto = (document.getElementById('fTexto')?.value || '');
+
+  google.script.run
+    .withSuccessHandler(url => {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = prevText;
+      }
+      if (url) window.open(url);
+    })
+    .withFailureHandler(err => {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = prevText;
+      }
+      console.error('Error generando PDF:', err);
+      alert('Error al generar PDF. Revisa la consola.');
+    })
+    .generarRankingPdfFiltrado({ grado, ie, categoria, texto });
 }
 
 function eliminarRegistro(id) {
