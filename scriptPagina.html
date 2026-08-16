@@ -9,6 +9,36 @@ let guardandoRegistro = false; // Bandera para evitar múltiples guardados
 // Listas de opciones cargadas al inicio
 let listasOpciones = { grados: [], instituciones: [], categoriaPorInstitucion: {} };
 
+// Calcular posiciones (puesto) maestras por grado + categoría
+function computeRankings() {
+  const mapa = {};
+  datosOriginales.forEach(r => {
+    const key = (r.grado || '') + '||' + (r.categoria || '');
+    if (!mapa[key]) mapa[key] = [];
+    mapa[key].push(r);
+  });
+
+  const toSegundos = s => {
+    if (!s) return 0;
+    const match = String(s).match(/^(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?$/);
+    if (!match) return 0;
+    const h = Number(match[1]) || 0;
+    const m = Number(match[2]) || 0;
+    const sec = Number(match[3]) || 0;
+    return h * 3600 + m * 60 + sec;
+  };
+
+  Object.values(mapa).forEach(group => {
+    group.sort((a, b) => {
+      const pa = Number(a.puntaje) || 0;
+      const pb = Number(b.puntaje) || 0;
+      if (pb !== pa) return pb - pa; // puntaje desc
+      return toSegundos(a.hora) - toSegundos(b.hora); // hora asc (más temprano mejor)
+    });
+    group.forEach((r, i) => r.puesto = i + 1);
+  });
+}
+
 function cargarPagina(nombre) {
   google.script.run
     .withSuccessHandler(html => {
@@ -25,11 +55,40 @@ function cargarPagina(nombre) {
 function cargarData() {
   google.script.run
     .withSuccessHandler(resp => {
+      // Guardar filtros actuales para restaurarlos después de recargar
+      const prevGrado = document.getElementById('fGrado')?.value || '';
+      const prevIE = document.getElementById('fIE')?.value || '';
+      const prevCat = document.getElementById('fCategoria')?.value || '';
+      const prevTexto = document.getElementById('fTexto')?.value || '';
+
       datosOriginales = Array.isArray(resp) ? resp : [];
       datosMostrados = [...datosOriginales];
+
+      // Calcular ranking maestro y mantener puestos aun después de filtrar
+      computeRankings();
+
+      // Orden inicial por puesto maestro
+      datosMostrados.sort((a, b) => (Number(a.puesto) || 0) - (Number(b.puesto) || 0));
+
+      // Recrear las opciones y luego restaurar los filtros seleccionados
       llenarFiltros();
+
+      const selGrado = document.getElementById('fGrado');
+      if (selGrado && [...selGrado.options].some(o => o.value === prevGrado)) selGrado.value = prevGrado;
+      const selIE = document.getElementById('fIE');
+      if (selIE && [...selIE.options].some(o => o.value === prevIE)) selIE.value = prevIE;
+      const selCat = document.getElementById('fCategoria');
+      if (selCat && [...selCat.options].some(o => o.value === prevCat)) selCat.value = prevCat;
+      const fTexto = document.getElementById('fTexto');
+      if (fTexto) fTexto.value = prevTexto;
+
+      // Asegurar que el orden por defecto sea por puesto
+      ordenActual.col = 'puesto';
+      ordenActual.asc = true;
+
+      // Aplicar los filtros restaurados y renderizar (ordenará por puesto)
+      aplicarFiltroTexto();
       actualizarContador();
-      renderTabla(datosMostrados);
     })
     .withFailureHandler(err => console.error("Error al obtener datos:", err))
     .getAllData();
@@ -90,6 +149,7 @@ function renderTabla(array) {
     const tr = document.createElement("tr");
 
     tr.insertAdjacentHTML("beforeend", `
+      <td>${escapeHtml(row.puesto)}</td>
       <td>${escapeHtml(row.apellidos)}</td>
       <td>${escapeHtml(row.nombres)}</td>
       <td>${escapeHtml(row.grado)}</td>
@@ -119,7 +179,15 @@ function llenarFiltros() {
   selIE.innerHTML = '<option value="">Filtrar por Institución</option>';
   selCat.innerHTML = '<option value="">Filtrar por Categoría</option>';
 
-  const grados = [...new Set(datosOriginales.map(r => r.grado))].filter(x => x).sort((a,b)=>a.localeCompare(b, undefined, {numeric:true}));
+  // Usar el orden definido en la pestaña de configuración (listasOpciones.grados) si está disponible
+  let grados;
+  if (Array.isArray(listasOpciones.grados) && listasOpciones.grados.length) {
+    grados = listasOpciones.grados.filter(x => x);
+  } else {
+    // Fallback: mantener el orden de aparición en los datos
+    grados = [...new Set(datosOriginales.map(r => r.grado))].filter(x => x);
+  }
+
   const ies = [...new Set(datosOriginales.map(r => r.ie))].filter(x => x).sort();
   const cats = [...new Set(datosOriginales.map(r => r.categoria))].filter(x => x).sort();
 
@@ -157,11 +225,15 @@ function ordenar(col, toggle = true) {
     let va = a[col] ?? "";
     let vb = b[col] ?? "";
 
-    // Ordenar por puntaje numérico
+    // Ordenar por puntaje numérico (si empatan, usar el puesto maestro como desempate)
     if (col === "puntaje") {
       va = Number(va) || 0;
       vb = Number(vb) || 0;
-      return ordenActual.asc ? va - vb : vb - va;
+      if (va !== vb) return ordenActual.asc ? va - vb : vb - va;
+
+      const pa = Number(a.puesto) || 999999;
+      const pb = Number(b.puesto) || 999999;
+      return pa - pb;
     }
 
     // Ordenar por hora (h:m:s)
@@ -177,6 +249,13 @@ function ordenar(col, toggle = true) {
       };
       va = toSegundos(va);
       vb = toSegundos(vb);
+      return ordenActual.asc ? va - vb : vb - va;
+    }
+
+    // Ordenar por puesto (numérico)
+    if (col === "puesto") {
+      va = Number(va) || 0;
+      vb = Number(vb) || 0;
       return ordenActual.asc ? va - vb : vb - va;
     }
 
