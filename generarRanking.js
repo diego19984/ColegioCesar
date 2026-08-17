@@ -244,6 +244,21 @@ td { border: 1px solid #000; padding: 1px 2px; font-size: 8pt; text-align: cente
     return true;
   });
 
+  const usarOrdenPorGrado = !gradoFilter && !categoriaFilter && !textoFilter && !!ieFilter;
+  const valorGradoParaOrden = (grado) => {
+    const texto = String(grado || '').trim().toLowerCase();
+    if (!texto) return { nivel: 999, numero: 999 };
+
+    const matchNumero = texto.match(/(\d{1,2})/);
+    const numero = matchNumero ? Number(matchNumero[1]) : 999;
+
+    if (texto.includes('inicial')) return { nivel: 0, numero };
+    if (texto.includes('prim')) return { nivel: 1, numero };
+    if (texto.includes('sec')) return { nivel: 2, numero };
+    if (texto.includes('pre')) return { nivel: 0, numero };
+    return { nivel: 999, numero };
+  };
+
   if (subset.length) {
     const fechaActual = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "dd/MM/yyyy");
     const horaActual = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "HH:mm:ss");
@@ -279,8 +294,17 @@ td { border: 1px solid #000; padding: 1px 2px; font-size: 8pt; text-align: cente
   <table>
     <tr><th>#</th><th>Nombre</th><th>Grado</th><th>Institución</th><th>Categoría</th><th>Puntaje</th><th>Hora Entrega</th></tr>`;
 
-    // Ordenar subset por puesto maestro para mantener ranking
-    subset.sort((a, b) => (puestosMapa[a[0]] || 999999) - (puestosMapa[b[0]] || 999999));
+    // Ordenar subset por puesto maestro para mantener ranking, salvo en el caso especial de filtro por IE
+    subset.sort((a, b) => {
+      if (usarOrdenPorGrado) {
+        const ga = valorGradoParaOrden(a[3]);
+        const gb = valorGradoParaOrden(b[3]);
+        if (ga.nivel !== gb.nivel) return ga.nivel - gb.nivel;
+        if (ga.numero !== gb.numero) return ga.numero - gb.numero;
+        return String(a[1] || '').localeCompare(String(b[1] || ''), undefined, { numeric: true });
+      }
+      return (puestosMapa[a[0]] || 999999) - (puestosMapa[b[0]] || 999999);
+    });
 
     subset.forEach((row) => {
       const puesto = puestosMapa[row[0]] || '';

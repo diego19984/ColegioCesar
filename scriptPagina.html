@@ -105,6 +105,42 @@ document.addEventListener("input", e => {
   }
 });
 
+function getFiltrosActivos() {
+  const texto = (document.getElementById("fTexto")?.value || "").trim();
+  const grado = (document.getElementById("fGrado")?.value || "").trim();
+  const ie = (document.getElementById("fIE")?.value || "").trim();
+  const categoria = (document.getElementById("fCategoria")?.value || "").trim();
+
+  const activos = [];
+  if (texto) activos.push("texto");
+  if (grado) activos.push("grado");
+  if (ie) activos.push("ie");
+  if (categoria) activos.push("categoria");
+
+  return { texto, grado, ie, categoria, activos };
+}
+
+function getOrdenDefectoSegunFiltros() {
+  const { activos, texto, grado, ie, categoria } = getFiltrosActivos();
+  const filtroSoloIE = activos.length === 1 && !!ie && !texto && !grado && !categoria;
+  return filtroSoloIE ? "grado" : "puesto";
+}
+
+function valorGradoParaOrden(grado) {
+  const texto = String(grado || "").trim().toLowerCase();
+  if (!texto) return { nivel: 999, numero: 999, orden: 999999 };
+
+  const matchNumero = texto.match(/(\d{1,2})/);
+  const numero = matchNumero ? Number(matchNumero[1]) : 999;
+
+  if (texto.includes("inicial")) return { nivel: 0, numero, orden: numero };
+  if (texto.includes("prim")) return { nivel: 1, numero, orden: numero };
+  if (texto.includes("sec")) return { nivel: 2, numero, orden: numero };
+  if (texto.includes("pre")) return { nivel: 0, numero, orden: numero };
+
+  return { nivel: 999, numero, orden: 999999 };
+}
+
 function aplicarFiltroTexto() {
   const texto = (document.getElementById("fTexto")?.value || "").toLowerCase().trim();
   const palabras = texto.split(/\s+/);
@@ -126,6 +162,12 @@ function aplicarFiltroTexto() {
       if (cat && r.categoria !== cat) return false;
       return true;
     });
+  }
+
+  const ordenDefecto = getOrdenDefectoSegunFiltros();
+  if (!ordenActual.col || ordenActual.col === "puesto" || (ordenActual.col === "grado" && ordenDefecto === "puesto")) {
+    ordenActual.col = ordenDefecto;
+    ordenActual.asc = true;
   }
 
   if (ordenActual.col) ordenar(ordenActual.col, false);
@@ -208,8 +250,9 @@ function aplicarFiltros() {
 function resetFiltros() {
   ["fGrado","fIE","fCategoria","fTexto"].forEach(id => document.getElementById(id).value="");
   datosMostrados = [...datosOriginales];
-  if (ordenActual.col) ordenar(ordenActual.col, false);
-  else renderTabla(datosMostrados);
+  ordenActual.col = "puesto";
+  ordenActual.asc = true;
+  ordenar("puesto", false);
 }
 
 function ordenar(col, toggle = true) {
@@ -259,6 +302,17 @@ function ordenar(col, toggle = true) {
       va = Number(va) || 0;
       vb = Number(vb) || 0;
       return ordenActual.asc ? va - vb : vb - va;
+    }
+
+    // Ordenar por grado con prioridad por etapa y número del curso
+    if (col === "grado") {
+      const ga = valorGradoParaOrden(va);
+      const gb = valorGradoParaOrden(vb);
+      if (ga.nivel !== gb.nivel) return ordenActual.asc ? ga.nivel - gb.nivel : gb.nivel - ga.nivel;
+      if (ga.numero !== gb.numero) return ordenActual.asc ? ga.numero - gb.numero : gb.numero - ga.numero;
+      return ordenActual.asc
+        ? String(va).localeCompare(String(vb), undefined, { numeric: true })
+        : String(vb).localeCompare(String(va), undefined, { numeric: true });
     }
 
     // Orden alfabético/numerico por defecto
