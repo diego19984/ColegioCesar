@@ -110,23 +110,14 @@ function getOpciones() {
   const ss = SpreadsheetApp.openById("1hCkFXrG1TEPer80ayQsgHigpDNb0XS9Oj7zSZ4qQjFI");
   const sh = ss.getSheetByName("Configuracion");
   const lastRow = sh.getLastRow();
-  if (lastRow < 2) return { categorias: [], grados: [], instituciones: [], categoriaPorInstitucion: {} };
+  if (lastRow < 2) return { grados: [], instituciones: [], categorias: [], configuraciones: [] };
 
-  const data = sh.getRange(2, 1, lastRow - 1, 4).getValues();
-  const categoriaPorInstitucion = {};
-  data.forEach(r => {
-    const institucion = String(r[2] || "").trim();
-    const categoria = String(r[3] || "").trim();
-    if (institucion) {
-      categoriaPorInstitucion[institucion.toUpperCase()] = categoria;
-    }
-  });
+  const data = sh.getRange(2, 1, lastRow - 1, 5).getValues();
 
   return {
     grados: [...new Set(data.map(r => r[1]).filter(x => x))],
     instituciones: [...new Set(data.map(r => r[2]).filter(x => x))].sort(),
-    categorias:[...new Set(data.map(r => String(r[3] || "")).map(x => x.trim()).filter(x => x && x.toUpperCase() !== "LIBRE"))].sort(),
-    configuraciones: data.map(r => r[4]),
-    categoriaPorInstitucion
+    categorias: [...new Set(data.map(r => String(r[3] || "").trim()).filter(Boolean))].sort(),
+    configuraciones: data.map(r => r[4])
   };
 }
