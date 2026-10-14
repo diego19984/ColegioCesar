@@ -549,7 +549,6 @@ function aplicarListasEnModal(fila = null) {
   const selGrado = document.getElementById("mGrado");
   const selIE = document.getElementById("institucion");
 
-  selCategoria.disabled = true;
   [selCategoria, selGrado, selIE].forEach(s => s.innerHTML="");
 
   const agregarOpciones = (select, opciones, placeholder) => {
@@ -565,10 +564,7 @@ function aplicarListasEnModal(fila = null) {
     });
     if (fila) {
       if (select.id === "institucion") select.value = fila.ie || "";
-      if (select.id === "mCategoria") {
-        const cat = String(fila.categoria || "").trim();
-        select.value = cat.toUpperCase() === "LIBRE" ? "" : cat;
-      }
+      if (select.id === "mCategoria") select.value = fila.categoria
       if (select.id === "mGrado") select.value = fila.grado || "";
     }
   };
@@ -577,8 +573,6 @@ function aplicarListasEnModal(fila = null) {
   agregarOpciones(selCategoria, listasOpciones.categorias, "Seleccione Categoría...");
   agregarOpciones(selGrado, listasOpciones.grados, "Seleccione Grado...");
 
-  selIE.onchange = rellenarCategoriaDesdeIE;
-  if (fila) rellenarCategoriaDesdeIE();
 }
 
 function isLibreInstitucion(ie) {
@@ -586,25 +580,6 @@ function isLibreInstitucion(ie) {
   return ie.toString().trim().toUpperCase() === "LIBRE";
 }
 
-function rellenarCategoriaDesdeIE() {
-  const ie = document.getElementById("institucion").value.trim();
-  const selCategoria = document.getElementById("mCategoria");
-  if (!selCategoria) return;
-
-  if (isLibreInstitucion(ie)) {
-    selCategoria.value = "";
-    selCategoria.disabled = false;
-    return;
-  }
-
-  const categoria = listasOpciones.categoriaPorInstitucion?.[ie.toUpperCase()] || "";
-  if (categoria && categoria.toString().trim().toUpperCase() !== "LIBRE") {
-    selCategoria.value = categoria;
-  } else {
-    selCategoria.value = "";
-  }
-  selCategoria.disabled = true;
-}
 
 // ----------------------
 // Botón actualizar opciones
