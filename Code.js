@@ -112,7 +112,7 @@ function getOpciones() {
   const lastRow = sh.getLastRow();
   if (lastRow < 2) return { grados: [], instituciones: [], categoriaPorInstitucion: {} };
 
-  const data = sh.getRange(2, 1, lastRow - 1, 4).getValues();
+  const data = sh.getRange(2, 1, lastRow - 1, 5).getValues();
   const categoriaPorInstitucion = {};
   data.forEach(r => {
     const institucion = String(r[2] || "").trim();

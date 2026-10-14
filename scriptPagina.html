@@ -429,8 +429,7 @@ function guardarRegistro() {
     return;
   }
 
-  const libre = isLibreInstitucion(ie);
-  if (!apellidos || !nombres || !grado || !ie || (!libre && !categoria)) {
+  if (!apellidos || !nombres || !grado || !ie || !categoria) {
     alert("Por favor completa todos los campos obligatorios (*)");
     return;
   }
@@ -459,13 +458,15 @@ function guardarRegistro() {
         cerrarModal(); 
         cargarData(); 
       })
-      .withFailureHandler(() => {
+      .withFailureHandler(err => {
         guardandoRegistro = false;
         if (btnGuardar) {
           btnGuardar.disabled = false;
           btnGuardar.style.opacity = "1";
           btnGuardar.style.cursor = "pointer";
         }
+        console.error("Error al editar el registro:", err);
+        alert(err && err.message ? err.message : "No se pudo editar el registro.");
       })
       .editarRegistroSheet(registro);
   } else {
@@ -480,13 +481,15 @@ function guardarRegistro() {
         cerrarModal(); 
         cargarData(); 
       })
-      .withFailureHandler(() => {
+      .withFailureHandler(err => {
         guardandoRegistro = false;
         if (btnGuardar) {
           btnGuardar.disabled = false;
           btnGuardar.style.opacity = "1";
           btnGuardar.style.cursor = "pointer";
         }
+        console.error("Error al agregar el registro:", err);
+        alert(err && err.message ? err.message : "No se pudo agregar el registro.");
       })
       .agregarRegistro(registro);
   }
@@ -574,12 +577,6 @@ function aplicarListasEnModal(fila = null) {
   agregarOpciones(selGrado, listasOpciones.grados, "Seleccione Grado...");
 
 }
-
-function isLibreInstitucion(ie) {
-  if (!ie) return false;
-  return ie.toString().trim().toUpperCase() === "LIBRE";
-}
-
 
 // ----------------------
 // Botón actualizar opciones
