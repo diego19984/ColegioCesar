@@ -110,7 +110,7 @@ function getOpciones() {
   const ss = SpreadsheetApp.openById("1hCkFXrG1TEPer80ayQsgHigpDNb0XS9Oj7zSZ4qQjFI");
   const sh = ss.getSheetByName("Configuracion");
   const lastRow = sh.getLastRow();
-  if (lastRow < 2) return { categorias: [], grados: [], instituciones: [], categoriaPorInstitucion: {} };
+  if (lastRow < 2) return { grados: [], instituciones: [], categoriaPorInstitucion: {} };
 
   const data = sh.getRange(2, 1, lastRow - 1, 4).getValues();
   const categoriaPorInstitucion = {};
